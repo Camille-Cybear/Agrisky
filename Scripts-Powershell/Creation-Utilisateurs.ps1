@@ -1,0 +1,1 @@
+#Script de création d'utilisateurs dans AD via un fichier csv
