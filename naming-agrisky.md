@@ -247,13 +247,14 @@ Enregistrements en minuscules dans la zone `agrisky.lan` : `orl-dc01.agrisky.lan
 
 ## 7. Réseau
 
-### VLAN
+## VLAN
 
 Format : **`V<ID>-<NOM>`** (nom des VLAN sur les commutateurs). Mêmes identifiants sur les deux sites.
 
 | VLAN | Nom | Siège | Saran |
 |---|---|---|---|
 | 10 | `V10-ADMINS` | ✓ | ✓ |
+| 15 | `V15-AD` | ✓ | ✓ |
 | 20 | `V20-SERVEURS` | ✓ | ✓ |
 | 30 | `V30-SAUVEGARDE` | ✓ | ✓ |
 | 40 | `V40-USERS` | ✓ | ✓ |
@@ -263,7 +264,7 @@ Format : **`V<ID>-<NOM>`** (nom des VLAN sur les commutateurs). Mêmes identifia
 | 80 | `V80-OT` | – | ✓ |
 | 90 | `V90-INVITES` | ✓ | ✓ |
 | 100 | `V100-DMZ` | ✓ | – |
-| 999 | `V999-PARKING` | ✓ | ✓ |
+| 999 | `V999-DEADZONE` | ✓ | ✓ |
 
 ### Interfaces OPNsense
 
