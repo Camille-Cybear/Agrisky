@@ -6,7 +6,7 @@ Ce document regroupe l'ensemble des commandes PowerShell de configuration des ma
 
 ## 1. Contrôleurs de domaine : AD DS, DNS, DHCP
 
-**Plan d'adressage v3**
+**Plan d'adressage**
 
 | Site | VLAN | Réseau | Passerelle |
 |---|---|---|---|
