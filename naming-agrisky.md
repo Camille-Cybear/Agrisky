@@ -198,7 +198,7 @@ Règles :
 | Lecture / écriture | `RW` |
 | Contrôle total | `FC` |
 
-Exemple bureau d'études : comptes du BE → `GG_USR_Conception` → `DL_FIC_Plans_RW` → droit NTFS Modification sur le partage des plans.
+Exemple des plans : comptes du BE → `GG_USR_Conception` → `DL_FIC_Plans_RW` → droit NTFS Modification ; comptes de la production → `GG_USR_Production` → `DL_FIC_Plans_RO` → droit NTFS Lecture. Personne d'autre n'a accès aux plans.
 
 **Création et appartenance** : les OU et les groupes sont listés dans l'onglet « Structure AD » du registre et créés par le script `AGRISKY-CreateADStructure.ps1`, qui applique aussi les imbrications de la colonne « MembreDe » (un `GG_` dans un `DL_`, `GG_ADM_T0_Annuaire` dans *Admins du domaine*). L'appartenance des comptes et des postes est calculée dans le registre puis appliquée par le script de création :
 
@@ -334,6 +334,17 @@ Accès par l'espace de noms DFS, jamais par le nom du serveur : le serveur peut 
 | Partage transverse | `\\agrisky.lan\partages\Commun` | – |
 | Dossier personnel | `\\agrisky.lan\perso\<matricule>` | `\\agrisky.lan\perso\CB0042I` |
 
+Mise en œuvre (script `AGRISKY-AddSharedFolders.ps1`, lancé sur le serveur de fichiers) :
+
+| Espace de noms | Partage SMB | Dossier sur le serveur | Droits NTFS |
+|---|---|---|---|
+| `\\agrisky.lan\partages\<POP>` (INF, USR, DIR, CPT) | `Partages` | `D:\Donnees\Partages\<POP>` | `DL_FIC_<POP>_RW` (Modification) |
+| `\\agrisky.lan\partages\Commun` | `Partages` | `D:\Donnees\Partages\Commun` | `DL_FIC_Commun_RW` |
+| `\\agrisky.lan\partages\Plans` | `Partages` | `D:\Donnees\Partages\Plans` | `DL_FIC_Plans_RW` (bureau d'études), `DL_FIC_Plans_RO` (production) |
+| `\\agrisky.lan\perso\<matricule>` | `Perso$` | `D:\Donnees\Perso\<matricule>` | le titulaire seul (Modification) |
+
+Seuls les groupes `DL_FIC_*` reçoivent des droits NTFS (AGDLP) ; les `GG_` y sont imbriqués via la colonne « MembreDe » de l'onglet « Structure AD ». Les partages sont en énumération basée sur l'accès : chacun ne voit que les dossiers qu'il peut ouvrir.
+
 ---
 
 ## 9. GPO
@@ -343,16 +354,23 @@ Format : **`<CIBLE>_<PORTEE>_<Fonction>`**
 | Partie | Valeurs |
 |---|---|
 | Cible | `C` (ordinateur), `U` (utilisateur) |
-| Portée | `ALL`, code de site (`ORL`, `SAR`), code de population (`USR`, `DIR`…) ou usage de poste (`CONCEPTION`, `PAIEMENT`, `PARTAGES`) |
+| Portée | `ALL`, code de site (`ORL`, `SAR`), code de population (`USR`, `DIR`…), usage de poste (`CONCEPTION`, `PAIEMENT`, `PARTAGES`) ou `SERVEURS` |
 | Fonction | en mots attachés, majuscule à chaque mot |
 
-| Exemple | Rôle |
-|---|---|
-| `C_ALL_SecuriteBitLocker` | Chiffrement des disques de tous les postes |
-| `C_CONCEPTION_BlocageUSB` | Blocage du stockage USB au bureau d'études |
-| `C_PAIEMENT_RestrictionNavigation` | Poste de paiement limité au site bancaire |
-| `U_ALL_LecteursReseau` | Montage des partages selon la population et les groupes |
-| `U_SAR_HorairesConnexion` | Plages horaires des postes partagés de Saran |
+| GPO | Liée à | Rôle |
+|---|---|---|
+| *Default Domain Policy* | domaine | Stratégie de mot de passe (aucun autre paramètre) |
+| `C_ALL_SecuriteBitLocker` | `Postes` | Chiffrement des disques de tous les postes |
+| `C_ALL_DurcissementPostes` | `Postes` | Pare-feu Windows, SMBv1 désactivé, administrateurs locaux = `GG_ADM_T2_Postes` |
+| `C_CONCEPTION_BlocageUSB` | `Postes/ORL/Conception` | Blocage du stockage USB au bureau d'études |
+| `C_PAIEMENT_RestrictionNavigation` | `Postes/ORL/Paiement` | Poste de paiement limité au site bancaire |
+| `C_PARTAGES_OuvertureSession` | `Postes/SAR/Partages` | Ouverture de session réservée à `GG_SAR_Tous` |
+| `C_SERVEURS_AdminsLocaux` | `Serveurs` | Administrateurs locaux = `GG_ADM_T1_Serveurs` |
+| `U_ALL_LecteursReseau` | `Utilisateurs` | Montage des partages selon la population et les groupes |
+| `U_ALL_Imprimantes` | `Utilisateurs` | Imprimante partagée COMMUN |
+| `U_SAR_HorairesConnexion` | `Utilisateurs/USR` | Déconnexion en fin de plage horaire (les plages sont portées par les comptes) |
+
+Aucune GPO autre que la *Default Domain Policy* n'est liée à la racine du domaine, et aucune GPO de restriction ne s'applique aux comptes et postes d'administration.
 
 La **stratégie de mot de passe** reste dans la *Default Domain Policy* : pour les comptes du domaine, elle ne s'applique que si elle est liée à la racine du domaine ; les exigences plus fortes pour les administrateurs passent par une stratégie de mot de passe affinée (PSO) nommée `PSO_Admins`.
 
