@@ -100,11 +100,12 @@ Format : **`<II><NNNN><C>`**
 | `NNNN` | Numéro séquentiel unique, jamais réutilisé | `0042` |
 | `C` | Catégorie de contrat | `I` |
 
-| Catégorie | Signification |
-|---|---|
-| `I` | Interne (CDI, CDD) |
-| `A` | Alternant / stagiaire (date de fin connue) |
-| `P` | Prestataire externe (date de fin obligatoire) |
+| Catégorie | Signification | Date d'expiration du compte |
+|---|---|---|
+| `I` | Interne : salarié d'Agrisky (CDI, CDD, alternant, stagiaire) | obligatoire si le contrat a une date de fin (CDD, alternant, stagiaire) |
+| `E` | Externe : prestataire, intérimaire | toujours obligatoire (fin de mission) |
+
+La catégorie distingue l'employeur, ce qui détermine le niveau de confiance et les droits ; la durée du contrat, elle, est portée par la date d'expiration du compte. Le type de contrat exact n'entre pas dans l'identifiant.
 
 Exemple : John DOE, interne → **`JD0042I`**
 
@@ -119,10 +120,22 @@ Le numéro garantit l'unicité : deux personnes aux mêmes initiales ont des num
 | Nom affiché | `Prénom NOM` | `John DOE` |
 | Mail | `prenom.nom@agrisky.fr` | `john.doe@agrisky.fr` |
 | Service (department) | nom du service | `Informatique` |
-| Description | `<POPULATION> – <fonction>` | `INF – Administratrice systèmes` |
-| Date d'expiration | obligatoire pour `A` et `P` | date de fin de contrat |
+| EmployeeID | matricule | `JD0042I` |
+| Description | `<POPULATION> – <service>` | `INF – Informatique` |
+| Date d'expiration | obligatoire pour `E` et pour les `I` à durée déterminée | date de fin de contrat ou de mission |
 
 Homonymie : ajout d'un chiffre après le nom, dans l'UPN comme dans le mail (`john.doe2`). La connexion se fait avec le matricule ; l'UPN suit le même format que le mail pour rester lisible.
+
+Les comptes sont créés par le script `AGRISKY-AddUsersAndComputers.ps1` à partir de l'onglet « Export AD - Utilisateurs » du registre des matricules (statut « Actif »). Le registre fait foi : aucun compte standard n'est créé à la main.
+
+### Départs
+
+Au départ d'un salarié, la ligne du registre passe au statut « Désactivé » avec la date de départ (elle n'est jamais supprimée). Le script `AGRISKY-DisableUsers.ps1` traite l'onglet « Export AD - Departs ». En urgence (compte compromis, départ immédiat), il accepte directement un ou plusieurs matricules (`-Matricule`) ; le registre est alors mis à jour juste après.
+
+- **Départ futur** : expiration du compte posée à la date de départ.
+- **Départ passé** : compte désactivé, mot de passe remplacé par une valeur aléatoire, retrait de tous les groupes (liste conservée dans le journal), description préfixée `Désactivé le <date> (ticket GLPI <n°>)`, déplacement dans l'OU `Desactives`, champ *Géré par* vidé sur ses postes.
+- **Comptes d'administration** (`-A0`, `-A1`, `-A2`) rattachés au matricule : traités en même temps.
+- **Pas de suppression immédiate** : les comptes restent dans `Desactives` pendant la durée de conservation, puis sont supprimés. Le matricule n'est jamais réattribué.
 
 ### Comptes d'administration (doubles comptes)
 
@@ -186,6 +199,18 @@ Règles :
 | Contrôle total | `FC` |
 
 Exemple bureau d'études : comptes du BE → `GG_USR_Conception` → `DL_FIC_Plans_RW` → droit NTFS Modification sur le partage des plans.
+
+**Création et appartenance** : les OU et les groupes sont listés dans l'onglet « Structure AD » du registre et créés par le script de structure AD. L'appartenance est calculée dans le registre puis appliquée par le script de création :
+
+| Groupe | Membres | Source dans le registre |
+|---|---|---|
+| `GG_<POPULATION>_Tous` | tous les comptes de la population | colonne Population |
+| `GG_<SITE>_Tous` | tous les comptes du site | colonne Site |
+| `GG_NOM_Tous` | titulaires d'un portable | onglet « Attribution PC » (site `NOM`) |
+| `GG_<POPULATION>_<Role>` (ex. `GG_USR_SAV`, `GG_USR_Conception`, `GG_CPT_Paiement`) | rôles métier | colonne « Groupes complémentaires » |
+| `GG_PC_Conception`, `GG_PC_Partages` | postes du bureau d'études, postes partagés de Saran | OU du poste dans « Attribution PC » |
+
+Un nouveau groupe s'ajoute d'abord dans l'onglet « Structure AD », jamais directement dans l'annuaire.
 
 ---
 
