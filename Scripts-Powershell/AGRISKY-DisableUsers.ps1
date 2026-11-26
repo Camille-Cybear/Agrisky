@@ -1,4 +1,4 @@
-#Requires -Modules ActiveDirectory
+﻿#Requires -Modules ActiveDirectory
 <#
 .SYNOPSIS
     Désactivation des comptes des salariés partis, à partir de l'export « Export AD - Departs »
