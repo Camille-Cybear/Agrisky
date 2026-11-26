@@ -200,7 +200,7 @@ Règles :
 
 Exemple bureau d'études : comptes du BE → `GG_USR_Conception` → `DL_FIC_Plans_RW` → droit NTFS Modification sur le partage des plans.
 
-**Création et appartenance** : les OU et les groupes sont listés dans l'onglet « Structure AD » du registre et créés par le script de structure AD. L'appartenance est calculée dans le registre puis appliquée par le script de création :
+**Création et appartenance** : les OU et les groupes sont listés dans l'onglet « Structure AD » du registre et créés par le script `AGRISKY-CreateADStructure.ps1`, qui applique aussi les imbrications de la colonne « MembreDe » (un `GG_` dans un `DL_`, `GG_ADM_T0_Annuaire` dans *Admins du domaine*). L'appartenance des comptes et des postes est calculée dans le registre puis appliquée par le script de création :
 
 | Groupe | Membres | Source dans le registre |
 |---|---|---|
